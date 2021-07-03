@@ -10,6 +10,7 @@ start = "uvicorn main:app --reload"
 requests = "*"
 fastapi = "*"
 uvicorn = "*"
+aiolinebot = "*"
 
 [dev-packages]
 
