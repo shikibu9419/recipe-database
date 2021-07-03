@@ -12,6 +12,7 @@ from linebot.models import (
 )
 from aiolinebot import AioLineBotApi
 
+from db.redis import ACTION_TYPES, r as redis
 from recipes import recipes
 
 line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
@@ -42,12 +43,14 @@ async def handle_events(events: List[Event]):
         message: str = event.message.text
         reply_token: str = event.reply_token
         user_id: str = event.source.user_id
+        before_action: str = redis.get(user_id) or 'init'
 
         if re.match(r'レシピを登録', message):
             await line_api.reply_message_async(
                 reply_token,
                 TextMessage(text='URLを登録してね！')
             )
+            before_action = 'create/default'
         elif re.match(r'.+で検索$', message):
             # TODO: from mongodb
             columns = [
@@ -64,8 +67,13 @@ async def handle_events(events: List[Event]):
             template_message = TemplateSendMessage(alt_text='listed recipes', template=carousel_template)
 
             await line_api.reply_message_async(reply_token, template_message)
+
+            before_action = 'search'
         else:
             await no_match_text(reply_token)
+            before_action = 'init'
+
+        redis.set(user_id, before_action)
 
 def no_match_text(reply_token: str):
     return line_api.reply_message_async(
