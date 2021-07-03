@@ -13,6 +13,8 @@ uvicorn = "*"
 aiolinebot = "*"
 pymongo = "*"
 validators = "*"
+redis = "*"
+hiredis = "*"
 
 [dev-packages]
 

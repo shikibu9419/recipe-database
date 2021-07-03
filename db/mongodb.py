@@ -41,7 +41,7 @@ def create_recipe(recipe: Recipe) -> Recipe:
     if hasattr(recipe, 'id'):
         delattr(recipe, 'id')
 
-    rs = db.recipes.insert_one(recipe.dict(by_alias=True))
-    recipe.id = res.inserted_id
+    rst = db.recipes.insert_one(recipe.dict(by_alias=True))
+    recipe.id = rst.inserted_id
 
     return recipe
