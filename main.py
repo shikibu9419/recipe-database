@@ -12,11 +12,11 @@ from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    CarouselColumn, CarouselTemplate, PostbackAction, TextMessage, TemplateSendMessage, URIAction
 )
 from aiolinebot import AioLineBotApi
 
-import logutil as logger
+from db import recipes
 
 line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 parser = WebhookParser(channel_secret=os.environ.get('LINE_CHANNEL_SECRET'))
@@ -53,25 +53,22 @@ async def handle_events(events):
             )
         elif re.match(r'.+で検索$', message):
             # return searched recipes as carousel
-        elif validators.url(message.strip()):
-            # select yes or no
+            columns = [
+                CarouselColumn(
+                    title=recipe.name,
+                    text='、'.join(recipe.tags),
+                    actions=[
+                        URIAction(label='レシピサイトへ', uri=recipe.url),
+                        PostbackAction(label='ping', data=f'id={recipe.id}')
+                    ])
+             for recipe in recipes]
+
+            carousel_template = CarouselTemplate(columns=columns)
+            template_message = TemplateSendMessage(alt_text='listed recipes', template=carousel_template)
+
+            line_bot_api.reply_message(event.reply_token, template_message)
         else:
             await no_match_text(event.reply_token)
-
-def second():
-    await line_api.reply_message(
-        event.reply_token,
-        TextMessage(text='メモを登録してね！')
-    )
-
-def third():
-    await line_api.reply_message(
-        event.reply_token,
-        TextMessage(text='タグをカンマ区切りで登録してね！')
-    )
-
-def confirm():
-    # select yes or no
 
 def no_match_text(reply_token: str):
     line_api.reply_message_async(
