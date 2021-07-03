@@ -3,7 +3,8 @@ from pymongo import MongoClient
 from bson import ObjectId
 from typing import List, Optional
 
-client = MongoClient('localhost', 27017)
+client = MongoClient('mongo', 27017)
+client.admin.authenticate('root', 'password')
 db = client.test
 
 class PyObjectId(ObjectId):

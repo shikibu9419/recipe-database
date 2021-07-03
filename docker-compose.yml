@@ -30,8 +30,8 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - mongo:/data/db
-      - mongo:/data/configdb
+      - /data/db
+      - /data/configdb
     command: [--auth]
 
   mongo-express:
@@ -53,8 +53,4 @@ services:
       - 6379:6379
     command: [redis-server, --loglevel, notice]
     volumes:
-      - redis:/data/redis
-
-volumes:
-  mongo: {}
-  redis: {}
+      - /data/redis
