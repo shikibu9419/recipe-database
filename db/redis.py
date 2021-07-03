@@ -1,4 +1,5 @@
-from redis import from_url
+import redis
 import os
 
-redis = from_url(os.environ['REDIS_URL'], decode_responses=True)
+pool = redis.ConnectionPool(host='redis', port=6379, db=0)
+r = redis.StrictRedis(connection_pool=pool, decode_responses=True)
