@@ -16,7 +16,7 @@ from linebot.models import (
 )
 from aiolinebot import AioLineBotApi
 
-from db import recipes
+from recipes import recipes
 
 line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 parser = WebhookParser(channel_secret=os.environ.get('LINE_CHANNEL_SECRET'))
@@ -33,7 +33,7 @@ async def callback(request: Request, background_tasks: BackgroundTasks):
     signature = request.headers['X-Line-Signature']
 
     events = parser.parse(
-        (await request.body()).decode("utf-8"),
+        (await request.body()).decode('utf-8'),
         signature
     )
 
