@@ -15,6 +15,8 @@ from linebot.models import (
 )
 from aiolinebot import AioLineBotApi
 
+import logutil as logger
+
 line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 parser = WebhookParser(channel_secret=os.environ.get('LINE_CHANNEL_SECRET'))
 
@@ -41,6 +43,7 @@ async def callback(request: Request, background_tasks: BackgroundTasks):
 async def handle_events(events):
     for event in events:
         try:
+            logger.info(f"text: {ev.message.text}")
             await line_api.reply_message_async(
                 event.reply_token,
                 TextMessage(text=f"You said: {ev.message.text}"))
