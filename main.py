@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-from fastapi import BackgroundTasks, FastAPI, Form, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 import os
 import json
 
 from linebot import (
-    LineBotApi, WebhookHandler
+    LineBotApi, WebhookParser
 )
 from linebot.exceptions import (
     InvalidSignatureError
@@ -15,7 +15,7 @@ from linebot.models import (
 )
 from aiolinebot import AioLineBotApi
 
-line_api = LineBotApi(os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
+line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 parser = WebhookParser(channel_secret=os.environ.get('LINE_CHANNEL_SECRET'))
 
 app = FastAPI()
