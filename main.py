@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import RedirectResponse
 import os
 import re
 import validators
+from typing import List
 
-from linebot import (
-    LineBotApi, WebhookParser
-)
-from linebot.exceptions import (
-    InvalidSignatureError
-)
+from linebot import WebhookParser
 from linebot.models import (
-    CarouselColumn, CarouselTemplate, PostbackAction, TextMessage, TemplateSendMessage, URIAction
+    CarouselColumn, CarouselTemplate, Event, PostbackAction, TextMessage, TemplateSendMessage, URIAction
 )
 from aiolinebot import AioLineBotApi
 
@@ -41,11 +37,11 @@ async def callback(request: Request, background_tasks: BackgroundTasks):
 
     return 'ok'
 
-async def handle_events(events):
+async def handle_events(events: List[Event]):
     for event in events:
-        message = event.message.text
-        reply_token = event.reply_token
-        user_id = event.source.user_id
+        message: str = event.message.text
+        reply_token: str = event.reply_token
+        user_id: str = event.source.user_id
 
         if re.match(r'レシピを登録', message):
             await line_api.reply_message_async(
