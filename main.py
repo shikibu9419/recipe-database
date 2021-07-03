@@ -2,7 +2,8 @@
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 import os
-import json
+import re
+import validators
 
 from linebot import (
     LineBotApi, WebhookParser
@@ -42,6 +43,38 @@ async def callback(request: Request, background_tasks: BackgroundTasks):
 
 async def handle_events(events):
     for event in events:
-        await line_api.reply_message_async(
-            event.reply_token,
-            TextMessage(text=f"You said: {event.message.text}"))
+        message = event.message.text
+        user_id = event.source.user_id
+
+        if re.match(r'レシピを登録', message):
+            await line_api.reply_message(
+                event.reply_token,
+                TextMessage(text='URLを登録してね！')
+            )
+        elif re.match(r'.+で検索$', message):
+            # return searched recipes as carousel
+        elif validators.url(message.strip()):
+            # select yes or no
+        else:
+            await no_match_text(event.reply_token)
+
+def second():
+    await line_api.reply_message(
+        event.reply_token,
+        TextMessage(text='メモを登録してね！')
+    )
+
+def third():
+    await line_api.reply_message(
+        event.reply_token,
+        TextMessage(text='タグをカンマ区切りで登録してね！')
+    )
+
+def confirm():
+    # select yes or no
+
+def no_match_text(reply_token: str):
+    line_api.reply_message_async(
+        reply_token,
+        TextMessage(text='もう一度お願いします！')
+    )

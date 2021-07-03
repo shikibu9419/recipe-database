@@ -11,6 +11,8 @@ requests = "*"
 fastapi = "*"
 uvicorn = "*"
 aiolinebot = "*"
+pymongo = "*"
+validators = "*"
 
 [dev-packages]
 
