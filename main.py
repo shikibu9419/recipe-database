@@ -42,10 +42,6 @@ async def callback(request: Request, background_tasks: BackgroundTasks):
 
 async def handle_events(events):
     for event in events:
-        try:
-            logger.info(f"text: {ev.message.text}")
-            await line_api.reply_message_async(
-                event.reply_token,
-                TextMessage(text=f"You said: {ev.message.text}"))
-        except Exception:
-            pass
+        await line_api.reply_message_async(
+            event.reply_token,
+            TextMessage(text=f"You said: {event.message.text}"))
