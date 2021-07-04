@@ -10,22 +10,12 @@ import re
 import os
 
 from mongodb import Recipe, create_recipe, get_filtered_recipes, get_random_recipes, get_recipe, get_temporary_recipe, update_recipe
+from utils import get_title_from_url, truncate
 
 line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 
 async def handle_init(message: str, reply_token: str, user_id: str) -> str:
-    if re.match(r'レシピを登録', message):
-        await line_api.reply_message_async(
-            reply_token,
-            TextMessage(text='URLを登録してね！')
-        )
-
-        return 'create/url'
-    elif validators.url(message):
-        await get_recipe_from_site(message, reply_token)
-
-        return 'create/note'
-    elif re.match(r'レシピを見る', message):
+    if re.match(r'レシピを見る', message):
         recipes = get_random_recipes(user_id)
 
         if len(recipes) > 0:
@@ -40,6 +30,15 @@ async def handle_init(message: str, reply_token: str, user_id: str) -> str:
             await line_api.reply_message_async(reply_token, get_recipes_carousel(recipes, alt_text=f'で検索した結果'))
         else:
             await not_found_text(reply_token)
+    elif re.match(r'レシピを登録', message):
+        await line_api.reply_message_async(
+            reply_token,
+            TextMessage(text='URLを登録してね！')
+        )
+
+        return 'create/url'
+    elif validators.url(message):
+        return await handle_create_url(message, reply_token, user_id)
     elif re.match(r'id=[0-9a-f]+$', message):
         recipe = get_recipe(user_id, message.split('=')[-1])
 
@@ -56,17 +55,21 @@ async def handle_init(message: str, reply_token: str, user_id: str) -> str:
     return 'init'
 
 
-async def handle_create_url(message: str, reply_token: str, user_id: str) -> str:
-    if validators.url(message):
-        # TODO
-        name = message
-        recipe = create_recipe({ 'user_id': user_id, 'name': name, 'url': message, 'is_temporary': True })
+async def handle_create_url(url: str, reply_token: str, user_id: str) -> str:
+    if validators.url(url):
+        name = get_title_from_url(url)
+        recipe = create_recipe({ 'user_id': user_id, 'name': name, 'url': url, 'is_temporary': True })
         if not recipe:
             await not_found_text(reply_token)
             return 'init'
-        update_recipe(recipe.id, { 'url': message })
+        update_recipe(recipe.id, { 'name': name, 'url': url })
 
-        await get_recipe_from_site(message, reply_token)
+        await line_api.reply_message_async(
+            reply_token,
+            [
+                TextMessage(text=f'これが出てきたよ！\n{name}\n{url}'),
+                TextMessage(text='メモを書いてね！')
+            ])
 
         return 'create/note'
     else:
@@ -99,7 +102,10 @@ async def handle_create_tags(message: str, reply_token: str, user_id: str) -> st
 
     recipe = get_temporary_recipe(user_id)
 
-    await line_api.reply_message_async(reply_token, get_confirmation_buttons('これでいい？', recipe.stringify()))
+    await line_api.reply_message_async(reply_token, [
+        TextMessage(text=recipe.stringify()),
+        get_confirmation_buttons('これでいい？', truncate(recipe.name, 30))
+    ])
 
     return 'create/confirm'
 
@@ -123,17 +129,7 @@ async def handle_create_confirm(postback: str, reply_token: str, user_id: str) -
 
     return 'init'
 
-async def get_recipe_from_site(url: str, reply_token: str) -> str:
-    await line_api.reply_message_async(
-        reply_token,
-        [
-            TextMessage(text='これが出てきたよ！'),
-            TextMessage(text='メモを書いてね！')
-        ])
-
-    return 'create/note'
-
-def get_confirmation_buttons(title: str, text: str) -> TemplateSendMessage:
+def get_confirmation_buttons(title: str, text: str = '') -> TemplateSendMessage:
     buttons_template = ButtonsTemplate(
         title=title,
         text=text,
