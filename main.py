@@ -9,7 +9,7 @@ import os
 
 from linebot.models.events import PostbackEvent
 
-from db.redis import r as redis
+from redisdb import r as redis
 from messages import *
 
 parser = WebhookParser(channel_secret=os.environ.get('LINE_CHANNEL_SECRET'))

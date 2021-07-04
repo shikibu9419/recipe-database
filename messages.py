@@ -9,7 +9,7 @@ from typing import List
 import re
 import os
 
-from db.mongodb import Recipe, list_recipes
+from mongodb import Recipe, list_recipes
 
 line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 
