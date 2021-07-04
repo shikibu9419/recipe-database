@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Union
 
 from models.recipe import Recipe
 
-MAX_RECIPES_COUNT = 7
+MAX_RECIPES_COUNT = 5
 
 client = MongoClient(os.environ.get('MONGODB_HOST'), 27017)
 client.admin.authenticate(os.environ.get('MONGODB_USER'), os.environ.get('MONGODB_PASSWORD'))
