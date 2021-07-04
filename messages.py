@@ -33,7 +33,7 @@ async def handle_init(message: str, reply_token: str, user_id: str) -> str:
     elif re.match(r'レシピを登録', message):
         await line_api.reply_message_async(
             reply_token,
-            TextMessage(text='URLを登録してね！')
+            TextMessage(text='URLを教えてください！')
         )
 
         return 'create/url'
@@ -67,8 +67,8 @@ async def handle_create_url(url: str, reply_token: str, user_id: str) -> str:
         await line_api.reply_message_async(
             reply_token,
             [
-                TextMessage(text=f'これが出てきたよ！\n{title}\n{url}'),
-                TextMessage(text='メモを書いてね！')
+                TextMessage(text=f'このレシピを見つけました！\n{title}\n{url}'),
+                TextMessage(text='メモを書いてください！')
             ])
 
         return 'create/note'
@@ -86,7 +86,7 @@ async def handle_create_note(message: str, reply_token: str, user_id: str) -> st
 
     await line_api.reply_message_async(
         reply_token,
-        TextMessage(text='タグを改行区切りで登録してね！')
+        TextMessage(text='タグを改行区切りで書いてください！')
     )
 
     return 'create/tags'
@@ -104,7 +104,7 @@ async def handle_create_tags(message: str, reply_token: str, user_id: str) -> st
 
     await line_api.reply_message_async(reply_token, [
         TextMessage(text=recipe.stringify()),
-        get_confirmation_buttons('これでいい？', truncate(recipe.title, 30))
+        get_confirmation_buttons('これでいいですか？', truncate(recipe.title, 30))
     ])
 
     return 'create/confirm'
@@ -119,12 +119,12 @@ async def handle_create_confirm(postback: str, reply_token: str, user_id: str) -
 
         await line_api.reply_message_async(
             reply_token,
-            TextMessage(text='レシピを登録したよ！')
+            TextMessage(text='レシピを登録しました！')
         )
     else:
         await line_api.reply_message_async(
             reply_token,
-            TextMessage(text='やっぱりやめたよ...')
+            TextMessage(text='登録を中止しました...')
         )
 
     return 'init'
@@ -158,12 +158,12 @@ def get_recipes_carousel(recipes: List[Recipe], alt_text: str = 'レシピの一
 def not_found_text(reply_token: str):
     return line_api.reply_message_async(
         reply_token,
-        TextMessage(text='レシピが見つからなかったよ...')
+        TextMessage(text='レシピが見つかりませんでした...')
     )
 
 
 def no_match_text(reply_token: str):
     return line_api.reply_message_async(
         reply_token,
-        TextMessage(text='すみません。よくわかりませんでした。')
+        TextMessage(text='よくわかりませんでした。')
     )
