@@ -15,3 +15,6 @@ class Recipe(BaseModel):
         json_encoders = {
             ObjectId: str
         }
+
+    def stringify(self) -> str:
+        return f"{self.name}\n{self.url}\nタグ：{'、'.join(self.tags)}\n\n{self.note}"

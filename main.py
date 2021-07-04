@@ -56,6 +56,7 @@ async def handle_events(events: List[Event]):
             next_action = await handle_create_confirm(content.data, reply_token)
         else:
             await no_match_text(reply_token)
+            next_action = 'init'
 
         redis.set(user_id, next_action)
 

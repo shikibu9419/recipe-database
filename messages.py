@@ -9,7 +9,7 @@ from typing import List
 import re
 import os
 
-from mongodb import Recipe, list_recipes
+from mongodb import Recipe, get_filtered_recipes, get_random_recipes, get_recipe
 
 line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 
@@ -26,23 +26,27 @@ async def handle_init(message: str, reply_token: str) -> str:
 
         return 'create/note'
     elif re.match(r'レシピを見る', message):
-        recipes = list_recipes()
+        recipes = get_random_recipes()
 
         if len(recipes) > 0:
             await line_api.reply_message_async(reply_token, get_recipes_carousel(recipes))
         else:
-            await line_api.reply_message_async(reply_token, TextMessage(text='レシピが見つからなかったよ...'))
+            await not_found_text(reply_token)
     elif re.match(r'.+で検索$', message):
-        recipes = list_recipes()
+        name = re.sub(r'で検索$', '', message)
+        recipes = get_filtered_recipes(name)
 
         if len(recipes) > 0:
             await line_api.reply_message_async(reply_token, get_recipes_carousel(recipes, alt_text=f'で検索した結果'))
-
-            return 'select'
         else:
-            await line_api.reply_message_async(reply_token, TextMessage(text='レシピが見つからなかったよ...'))
+            await not_found_text(reply_token)
     elif re.match(r'id=[0-9a-f]+$', message):
-        await get_recipe(message, reply_token)
+        recipe = get_recipe(message.split('=')[-1])
+
+        await line_api.reply_message_async(
+            reply_token,
+            TextMessage(text=recipe.stringify())
+        )
     else:
         await no_match_text(reply_token)
 
@@ -93,12 +97,6 @@ async def handle_create_confirm(postback: str, reply_token: str) -> str:
 
     return 'init'
 
-async def get_recipe(recipe_id: str, reply_token: str):
-    await line_api.reply_message_async(
-        reply_token,
-        TextMessage(text=recipe_id)
-    )
-
 async def get_recipe_from_site(url: str, reply_token: str) -> str:
     await line_api.reply_message_async(
         reply_token,
@@ -133,6 +131,13 @@ def get_recipes_carousel(recipes: List[Recipe], alt_text: str = 'レシピの一
 
     carousel_template = CarouselTemplate(columns=columns)
     return TemplateSendMessage(alt_text=alt_text, template=carousel_template)
+
+
+def not_found_text(reply_token: str):
+    return line_api.reply_message_async(
+        reply_token,
+        TextMessage(text='レシピが見つからなかったよ...')
+    )
 
 
 def no_match_text(reply_token: str):
