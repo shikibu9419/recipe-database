@@ -27,7 +27,7 @@ def get_filtered_recipes(user_id: str, keyword: str) -> List[Recipe]:
         'user_id': user_id,
         'is_temporary': False,
         '$or': [
-            { 'name': { '$regex': keyword } },
+            { 'title': { '$regex': keyword } },
             { 'tags': keyword }] }
 
     return [Recipe(**recipe) for recipe in db.recipes.find(query, limit = MAX_RECIPES_COUNT)]

@@ -23,8 +23,8 @@ async def handle_init(message: str, reply_token: str, user_id: str) -> str:
         else:
             await not_found_text(reply_token)
     elif re.match(r'.+で検索$', message):
-        name = re.sub(r'で検索$', '', message)
-        recipes = get_filtered_recipes(user_id, name)
+        title = re.sub(r'で検索$', '', message)
+        recipes = get_filtered_recipes(user_id, title)
 
         if len(recipes) > 0:
             await line_api.reply_message_async(reply_token, get_recipes_carousel(recipes, alt_text=f'で検索した結果'))
@@ -57,17 +57,17 @@ async def handle_init(message: str, reply_token: str, user_id: str) -> str:
 
 async def handle_create_url(url: str, reply_token: str, user_id: str) -> str:
     if validators.url(url):
-        name = get_title_from_url(url)
-        recipe = create_recipe({ 'user_id': user_id, 'name': name, 'url': url, 'is_temporary': True })
+        title = get_title_from_url(url)
+        recipe = create_recipe({ 'user_id': user_id, 'title': title, 'url': url, 'is_temporary': True })
         if not recipe:
             await not_found_text(reply_token)
             return 'init'
-        update_recipe(recipe.id, { 'name': name, 'url': url })
+        update_recipe(recipe.id, { 'title': title, 'url': url })
 
         await line_api.reply_message_async(
             reply_token,
             [
-                TextMessage(text=f'これが出てきたよ！\n{name}\n{url}'),
+                TextMessage(text=f'これが出てきたよ！\n{title}\n{url}'),
                 TextMessage(text='メモを書いてね！')
             ])
 
@@ -104,7 +104,7 @@ async def handle_create_tags(message: str, reply_token: str, user_id: str) -> st
 
     await line_api.reply_message_async(reply_token, [
         TextMessage(text=recipe.stringify()),
-        get_confirmation_buttons('これでいい？', truncate(recipe.name, 30))
+        get_confirmation_buttons('これでいい？', truncate(recipe.title, 30))
     ])
 
     return 'create/confirm'
@@ -143,7 +143,7 @@ def get_confirmation_buttons(title: str, text: str = '') -> TemplateSendMessage:
 def get_recipes_carousel(recipes: List[Recipe], alt_text: str = 'レシピの一覧') -> TemplateSendMessage:
     columns = [
         CarouselColumn(
-            title=recipe.name,
+            title=truncate(recipe.title, 37),
             text='、'.join(recipe.tags),
             actions=[
                 PostbackAction(label='詳細', data=f'id={recipe.id}'),
