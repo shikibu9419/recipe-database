@@ -20,4 +20,4 @@ class Recipe(BaseModel):
         }
 
     def stringify(self) -> str:
-        return f"{self.title}\nタグ：{'、'.join(self.tags)}\n{self.note}"
+        return f"{self.title}\nタグ：{'、'.join(self.tags)}\n{self.url}\n{self.note}"
