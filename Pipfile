@@ -9,7 +9,7 @@ start = "uvicorn main:app --reload"
 [packages]
 requests = "*"
 fastapi = "*"
-uvicorn = "*"
+uvicorn = {extras = ["standard"], version = "*"}
 aiolinebot = "*"
 pymongo = "*"
 validators = "*"
@@ -19,4 +19,4 @@ hiredis = "*"
 [dev-packages]
 
 [requires]
-python_version = "3.9"
+python_version = "3.8"

@@ -2,9 +2,10 @@ from pydantic import BaseModel, Field
 from pymongo import MongoClient
 from bson import ObjectId
 from typing import List, Optional
+import os
 
-client = MongoClient('mongo', 27017)
-client.admin.authenticate('root', 'password')
+client = MongoClient(os.environ.get('MONGODB_HOST'), 27017)
+client.admin.authenticate(os.environ.get('MONGODB_USER'), os.environ.get('MONGODB_PASSWORD'))
 db = client.test
 
 class PyObjectId(ObjectId):
