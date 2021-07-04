@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
 from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import RedirectResponse
-import os
-import re
-import validators
-from typing import List
-
 from linebot import WebhookParser
-from linebot.models import (
-    CarouselColumn, CarouselTemplate, Event, PostbackAction, TextMessage, TemplateSendMessage, URIAction
-)
-from aiolinebot import AioLineBotApi
+from linebot.models import Event, MessageEvent
 
-from db.redis import ACTION_TYPES, r as redis
-from recipes import recipes
+from typing import List
+import os
 
-line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
+from linebot.models.events import PostbackEvent
+
+from db.redis import r as redis
+from messages import *
+
 parser = WebhookParser(channel_secret=os.environ.get('LINE_CHANNEL_SECRET'))
 
 app = FastAPI()
@@ -40,43 +36,31 @@ async def callback(request: Request, background_tasks: BackgroundTasks):
 
 async def handle_events(events: List[Event]):
     for event in events:
-        message: str = event.message.text
+        content = get_content_from_event(event)
         reply_token: str = event.reply_token
         user_id: str = event.source.user_id
-        before_action: str = redis.get(user_id) or 'init'
+        next_action: str = (redis.get(user_id) or b'init').decode()
+        print(f'message from {user_id}')
+        print(content, reply_token, next_action)
 
-        if re.match(r'レシピを登録', message):
-            await line_api.reply_message_async(
-                reply_token,
-                TextMessage(text='URLを登録してね！')
-            )
-            before_action = 'create/default'
-        elif re.match(r'.+で検索$', message):
-            # TODO: from mongodb
-            columns = [
-                CarouselColumn(
-                    title=recipe.name,
-                    text='、'.join(recipe.tags),
-                    actions=[
-                        PostbackAction(label='詳細', data=f'id={recipe.id}'),
-                        URIAction(label='レシピサイトへ', uri=recipe.url)
-                    ])
-             for recipe in recipes]
-
-            carousel_template = CarouselTemplate(columns=columns)
-            template_message = TemplateSendMessage(alt_text='listed recipes', template=carousel_template)
-
-            await line_api.reply_message_async(reply_token, template_message)
-
-            before_action = 'search'
+        if next_action == 'init':
+            message = content.text if isinstance(event, MessageEvent) else content.data
+            next_action = await handle_init(message, reply_token)
+        elif next_action == 'create/url':
+            next_action = await handle_create_url(content.text, reply_token)
+        elif next_action == 'create/note':
+            next_action = await handle_create_note(content.text, reply_token)
+        elif next_action == 'create/tags':
+            next_action = await handle_create_tags(content.text, reply_token)
+        elif next_action == 'create/confirm':
+            next_action = await handle_create_confirm(content.data, reply_token)
         else:
             await no_match_text(reply_token)
-            before_action = 'init'
 
-        redis.set(user_id, before_action)
+        redis.set(user_id, next_action)
 
-def no_match_text(reply_token: str):
-    return line_api.reply_message_async(
-        reply_token,
-        TextMessage(text='もう一度お願いします！')
-    )
+def get_content_from_event(event: Event):
+    if isinstance(event, MessageEvent):
+        return event.message
+    elif isinstance(event, PostbackEvent):
+        return event.postback
