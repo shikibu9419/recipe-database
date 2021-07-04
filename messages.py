@@ -9,11 +9,11 @@ from typing import List
 import re
 import os
 
-from mongodb import Recipe, get_filtered_recipes, get_random_recipes, get_recipe
+from mongodb import Recipe, create_recipe, get_filtered_recipes, get_random_recipes, get_recipe, get_temporary_recipe, update_recipe
 
 line_api = AioLineBotApi(channel_access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 
-async def handle_init(message: str, reply_token: str) -> str:
+async def handle_init(message: str, reply_token: str, user_id: str) -> str:
     if re.match(r'レシピを登録', message):
         await line_api.reply_message_async(
             reply_token,
@@ -26,7 +26,7 @@ async def handle_init(message: str, reply_token: str) -> str:
 
         return 'create/note'
     elif re.match(r'レシピを見る', message):
-        recipes = get_random_recipes()
+        recipes = get_random_recipes(user_id)
 
         if len(recipes) > 0:
             await line_api.reply_message_async(reply_token, get_recipes_carousel(recipes))
@@ -34,27 +34,38 @@ async def handle_init(message: str, reply_token: str) -> str:
             await not_found_text(reply_token)
     elif re.match(r'.+で検索$', message):
         name = re.sub(r'で検索$', '', message)
-        recipes = get_filtered_recipes(name)
+        recipes = get_filtered_recipes(user_id, name)
 
         if len(recipes) > 0:
             await line_api.reply_message_async(reply_token, get_recipes_carousel(recipes, alt_text=f'で検索した結果'))
         else:
             await not_found_text(reply_token)
     elif re.match(r'id=[0-9a-f]+$', message):
-        recipe = get_recipe(message.split('=')[-1])
+        recipe = get_recipe(user_id, message.split('=')[-1])
 
-        await line_api.reply_message_async(
-            reply_token,
-            TextMessage(text=recipe.stringify())
-        )
+        if recipe:
+            await line_api.reply_message_async(
+                reply_token,
+                TextMessage(text=recipe.stringify())
+            )
+        else:
+            await not_found_text(reply_token)
     else:
         await no_match_text(reply_token)
 
     return 'init'
 
 
-async def handle_create_url(message: str, reply_token: str) -> str:
+async def handle_create_url(message: str, reply_token: str, user_id: str) -> str:
     if validators.url(message):
+        # TODO
+        name = message
+        recipe = create_recipe({ 'user_id': user_id, 'name': name, 'url': message, 'is_temporary': True })
+        if not recipe:
+            await not_found_text(reply_token)
+            return 'init'
+        update_recipe(recipe.id, { 'url': message })
+
         await get_recipe_from_site(message, reply_token)
 
         return 'create/note'
@@ -63,7 +74,13 @@ async def handle_create_url(message: str, reply_token: str) -> str:
 
         return 'init'
 
-async def handle_create_note(message: str, reply_token: str) -> str:
+async def handle_create_note(message: str, reply_token: str, user_id: str) -> str:
+    recipe = get_temporary_recipe(user_id)
+    if not recipe:
+        await not_found_text(reply_token)
+        return 'init'
+    update_recipe(recipe.id, { 'note': message })
+
     await line_api.reply_message_async(
         reply_token,
         TextMessage(text='タグを改行区切りで登録してね！')
@@ -71,19 +88,22 @@ async def handle_create_note(message: str, reply_token: str) -> str:
 
     return 'create/tags'
 
-async def handle_create_tags(message: str, reply_token: str) -> str:
+async def handle_create_tags(message: str, reply_token: str, user_id: str) -> str:
     tags = message.split('\n')
 
-    title = 'レシピ名'
-    note = 'メモ'
-    url = 'メモ'
-    text = f"{title}\n{'、'.join(tags)}\n{url}\n{note}"
+    recipe = get_temporary_recipe(user_id)
+    if not recipe:
+        await not_found_text(reply_token)
+        return 'init'
+    update_recipe(recipe.id, { 'tags': tags })
 
-    await line_api.reply_message_async(reply_token, get_confirmation_buttons('これでいい？', text))
+    recipe = get_temporary_recipe(user_id)
+
+    await line_api.reply_message_async(reply_token, get_confirmation_buttons('これでいい？', recipe.stringify()))
 
     return 'create/confirm'
 
-async def handle_create_confirm(postback: str, reply_token: str) -> str:
+async def handle_create_confirm(postback: str, reply_token: str, user_id: str) -> str:
     if postback == 'ok':
         await line_api.reply_message_async(
             reply_token,
@@ -143,5 +163,5 @@ def not_found_text(reply_token: str):
 def no_match_text(reply_token: str):
     return line_api.reply_message_async(
         reply_token,
-        TextMessage(text='もう一度お願いします！')
+        TextMessage(text='すみません。よくわかりませんでした。')
     )

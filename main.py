@@ -45,15 +45,15 @@ async def handle_events(events: List[Event]):
 
         if next_action == 'init':
             message = content.text if isinstance(event, MessageEvent) else content.data
-            next_action = await handle_init(message, reply_token)
+            next_action = await handle_init(message, reply_token, user_id)
         elif next_action == 'create/url':
-            next_action = await handle_create_url(content.text, reply_token)
+            next_action = await handle_create_url(content.text, reply_token, user_id)
         elif next_action == 'create/note':
-            next_action = await handle_create_note(content.text, reply_token)
+            next_action = await handle_create_note(content.text, reply_token, user_id)
         elif next_action == 'create/tags':
-            next_action = await handle_create_tags(content.text, reply_token)
+            next_action = await handle_create_tags(content.text, reply_token, user_id)
         elif next_action == 'create/confirm':
-            next_action = await handle_create_confirm(content.data, reply_token)
+            next_action = await handle_create_confirm(content.data, reply_token, user_id)
         else:
             await no_match_text(reply_token)
             next_action = 'init'

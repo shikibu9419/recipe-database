@@ -6,9 +6,11 @@ from models.base import ObjectId, PyObjectId
 class Recipe(BaseModel):
     id: Optional[PyObjectId] = Field(alias='_id')
     name: str
-    note: str
-    tags: List[str]
     url: str
+    user_id: str
+    is_temporary: bool
+    tags: List[str] = []
+    note: Optional[str]
 
     class Config:
         arbitrary_types_allowed = True
