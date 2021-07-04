@@ -105,6 +105,12 @@ async def handle_create_tags(message: str, reply_token: str, user_id: str) -> st
 
 async def handle_create_confirm(postback: str, reply_token: str, user_id: str) -> str:
     if postback == 'ok':
+        recipe = get_temporary_recipe(user_id)
+        if not recipe:
+            await not_found_text(reply_token)
+            return 'init'
+        update_recipe(recipe.id, { 'is_temporary': False })
+
         await line_api.reply_message_async(
             reply_token,
             TextMessage(text='レシピを登録したよ！')
