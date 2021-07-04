@@ -22,8 +22,15 @@ def get_recipe(user_id: str, oid: str) -> Union[Recipe, None]:
 def get_random_recipes(user_id: str) -> List[Recipe]:
     return [Recipe(**recipe) for recipe in db.recipes.aggregate([{ '$match': { 'user_id': user_id, 'is_temporary': False } }, { '$sample': { 'size': MAX_RECIPES_COUNT } }])]
 
-def get_filtered_recipes(user_id: str, name: str) -> List[Recipe]:
-    return [Recipe(**recipe) for recipe in db.recipes.find({ 'user_id': user_id, 'name': { '$regex': name }, 'is_temporary': False }, limit = MAX_RECIPES_COUNT)]
+def get_filtered_recipes(user_id: str, keyword: str) -> List[Recipe]:
+    query = {
+        'user_id': user_id,
+        'is_temporary': False,
+        '$or': [
+            { 'name': { '$regex': keyword } },
+            { 'tags': keyword }] }
+
+    return [Recipe(**recipe) for recipe in db.recipes.find(query, limit = MAX_RECIPES_COUNT)]
 
 def get_temporary_recipe(user_id: str) -> Union[Recipe, None]:
     recipe = db.recipes.find_one({ 'user_id': user_id, 'is_temporary': True })
